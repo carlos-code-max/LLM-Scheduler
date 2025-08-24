@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: llm-scheduler-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: llm_scheduler_2024
+      MYSQL_DATABASE: llm_scheduler
+      MYSQL_USER: llm_user
+      MYSQL_PASSWORD: llm_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - llm-scheduler
+
+  # Redis 缓存和队列
+  redis:
+    image: redis:7-alpine
+    container_name: llm-scheduler-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - llm-scheduler
+    command: redis-server --appendonly yes
+
+  # Go 后端 API 服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: llm-scheduler-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - GIN_MODE=release
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=llm_user
+      - DB_PASSWORD=llm_password
+      - DB_NAME=llm_scheduler
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - ./backend/logs:/app/logs
+    networks:
+      - llm-scheduler
+    restart: unless-stopped
+
+  # React 前端 Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=http://localhost:8080
+    container_name: llm-scheduler-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - llm-scheduler
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  llm-scheduler:
+    driver: bridge
