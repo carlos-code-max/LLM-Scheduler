@@ -2,7 +2,7 @@
 app:
   name: "LLM Scheduler"
   version: "1.0.0"
-  env: "development"  # development, production
+  env: "development"  # development, live
 
 server:
   host: "0.0.0.0"

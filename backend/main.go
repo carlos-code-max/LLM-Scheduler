@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -45,10 +44,11 @@ func main() {
 	logger.Infof("Version: %s, Environment: %s", cfg.App.Version, cfg.App.Env)
 
 	// 初始化数据库
-	db, err := database.Initialize(cfg)
+	db, err := database.Init(cfg)
 	if err != nil {
-		logger.Fatal("Failed to initialize database: ", err)
+		panic(err)
 	}
+
 	defer func() {
 		sqlDB, _ := db.DB()
 		sqlDB.Close()
@@ -75,7 +75,7 @@ func main() {
 	// 启动 Worker 池
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	
+
 	go func() {
 		if err := workerManager.Start(ctx); err != nil {
 			logger.Error("Worker manager error: ", err)
@@ -83,7 +83,7 @@ func main() {
 	}()
 
 	// 设置 Gin 模式
-	if cfg.App.Env == "production" {
+	if cfg.App.Env == "live" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 

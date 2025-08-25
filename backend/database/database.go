@@ -2,8 +2,6 @@ package database
 
 import (
 	"fmt"
-	"time"
-
 	"llm-scheduler/config"
 	"llm-scheduler/models"
 
@@ -12,55 +10,36 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-// Initialize 初始化数据库连接
-func Initialize(cfg *config.Config) (*gorm.DB, error) {
-	// 构建 DSN
+func Init(cfg *config.Config) (*gorm.DB, error) {
 	dsn := cfg.Database.GetDSN()
-	
-	// GORM 配置
-	gormConfig := &gorm.Config{}
-	
-	// 根据环境设置日志级别
-	switch cfg.App.Env {
-	case "development":
-		gormConfig.Logger = logger.Default.LogMode(logger.Info)
-	case "production":
-		gormConfig.Logger = logger.Default.LogMode(logger.Warn)
-	default:
-		gormConfig.Logger = logger.Default.LogMode(logger.Silent)
+	gormConfig := &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
 	}
 
-	// 连接数据库
 	db, err := gorm.Open(mysql.Open(dsn), gormConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
-
-	// 获取底层 sql.DB 实例进行连接池配置
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
 	}
 
-	// 设置连接池参数
 	sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConns)
 	sqlDB.SetMaxOpenConns(cfg.Database.MaxOpenConns)
 	sqlDB.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
-
-	// 测试连接
-	if err := sqlDB.Ping(); err != nil {
+	if err = sqlDB.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	// 自动迁移数据库表结构
-	if err := migrate(db); err != nil {
+	if err = migrate(db); err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
 	return db, nil
 }
 
-// migrate 执行数据库迁移
 func migrate(db *gorm.DB) error {
 	// 按依赖关系顺序迁移
 	err := db.AutoMigrate(
@@ -144,12 +123,12 @@ func GetStats(db *gorm.DB) (map[string]interface{}, error) {
 	stats := sqlDB.Stats()
 	return map[string]interface{}{
 		"open_connections":     stats.OpenConnections,
-		"in_use":              stats.InUse,
-		"idle":                stats.Idle,
-		"wait_count":          stats.WaitCount,
-		"wait_duration":       stats.WaitDuration,
-		"max_idle_closed":     stats.MaxIdleClosed,
+		"in_use":               stats.InUse,
+		"idle":                 stats.Idle,
+		"wait_count":           stats.WaitCount,
+		"wait_duration":        stats.WaitDuration,
+		"max_idle_closed":      stats.MaxIdleClosed,
 		"max_idle_time_closed": stats.MaxIdleTimeClosed,
-		"max_lifetime_closed": stats.MaxLifetimeClosed,
+		"max_lifetime_closed":  stats.MaxLifetimeClosed,
 	}, nil
 }
