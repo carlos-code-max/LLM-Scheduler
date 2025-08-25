@@ -53,7 +53,7 @@ MYSQL_PASSWORD=your_mysql_password_here
 REDIS_PASSWORD=your_redis_password_here
 
 # 应用配置
-APP_ENV=production
+APP_ENV=live
 API_BASE_URL=https://your-domain.com
 
 # JWT 密钥（如果启用认证）
@@ -106,7 +106,7 @@ services:
     container_name: llm-scheduler-backend
     environment:
       - GIN_MODE=release
-      - APP_ENV=production
+      - APP_ENV=live
       - DB_HOST=mysql
       - DB_PASSWORD=${MYSQL_PASSWORD}
       - REDIS_HOST=redis
@@ -369,7 +369,7 @@ sudo cp build/* /var/www/html/
 ```yaml
 # backend/config.prod.yaml
 app:
-  env: "production"
+  env: "live"
 
 database:
   # 使用强密码
