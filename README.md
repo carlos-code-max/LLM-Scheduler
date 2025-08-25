@@ -16,14 +16,12 @@ LLM Scheduler is an open-source large language model scheduling and task managem
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  React Frontend │────│   Go API Server │────│  MySQL Database │
-│   (Dashboard)   │    │   (Gin/Fiber)   │    │ (Tasks/Models)  │
+│  Dashboard      │    │  Go HTTP Server │    │  MySQL Database │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                                 │
-                       ┌─────────────────┐
-                       │  Redis Queue    │
-                       │ (Task Scheduling│
-                       └─────────────────┘
+                       ┌─────────────────────────┐
+                       │  Task Scheduling Queue  │
+                       └─────────────────────────┘
 ```
 
 ## Quick Start
