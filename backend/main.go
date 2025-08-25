@@ -23,18 +23,15 @@ import (
 )
 
 func main() {
-	// 初始化日志
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.JSONFormatter{})
 	logger.SetLevel(logrus.InfoLevel)
 
-	// 加载配置
 	cfg, err := config.Load()
 	if err != nil {
 		logger.Fatal("Failed to load config: ", err)
 	}
 
-	// 设置日志级别
 	level, err := logrus.ParseLevel(cfg.Logging.Level)
 	if err == nil {
 		logger.SetLevel(level)
@@ -43,7 +40,6 @@ func main() {
 	logger.Info("Starting LLM Scheduler Server...")
 	logger.Infof("Version: %s, Environment: %s", cfg.App.Version, cfg.App.Env)
 
-	// 初始化数据库
 	db, err := database.Init(cfg)
 	if err != nil {
 		panic(err)
@@ -54,25 +50,19 @@ func main() {
 		sqlDB.Close()
 	}()
 
-	// 初始化 Redis
 	redisClient, err := queue.InitRedis(cfg)
 	if err != nil {
 		logger.Fatal("Failed to initialize Redis: ", err)
 	}
 	defer redisClient.Close()
 
-	// 初始化队列管理器
 	queueManager := queue.NewManager(redisClient, cfg, logger)
 
-	// 初始化服务
 	taskService := services.NewTaskService(db, queueManager, logger)
 	modelService := services.NewModelService(db, logger)
 	statsService := services.NewStatsService(db, logger)
 
-	// 初始化 Worker 管理器
 	workerManager := worker.NewManager(cfg, db, queueManager, taskService, modelService, logger)
-
-	// 启动 Worker 池
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -82,20 +72,17 @@ func main() {
 		}
 	}()
 
-	// 设置 Gin 模式
 	if cfg.App.Env == "live" {
 		gin.SetMode(gin.ReleaseMode)
 	}
-
-	// 创建 Gin 路由
 	router := gin.New()
 
-	// 中间件
+	// middleware
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 	router.Use(utils.LoggerMiddleware(logger))
 
-	// CORS 配置
+	// CORS
 	corsConfig := cors.Config{
 		AllowOrigins:     cfg.CORS.AllowOrigins,
 		AllowMethods:     cfg.CORS.AllowMethods,
@@ -110,10 +97,7 @@ func main() {
 	}
 	router.Use(cors.New(corsConfig))
 
-	// 注册路由
 	routes.RegisterRoutes(router, taskService, modelService, statsService, queueManager, logger)
-
-	// 创建 HTTP 服务器
 	srv := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
 		Handler:      router,
@@ -121,7 +105,6 @@ func main() {
 		WriteTimeout: cfg.Server.WriteTimeout,
 	}
 
-	// 启动服务器
 	go func() {
 		logger.Infof("Server starting on http://%s:%d", cfg.Server.Host, cfg.Server.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -129,17 +112,13 @@ func main() {
 		}
 	}()
 
-	// 优雅关闭
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	logger.Info("Shutting down server...")
 
-	// 停止 Worker 管理器
 	cancel()
-
-	// 关闭 HTTP 服务器
 	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

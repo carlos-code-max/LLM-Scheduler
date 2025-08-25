@@ -19,9 +19,9 @@ LLM Scheduler is an open-source large language model scheduling and task managem
 │  Dashboard      │    │  Go HTTP Server │    │  MySQL Database │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                                 │
-                       ┌─────────────────────────┐
-                       │  Task Scheduling Queue  │
-                       └─────────────────────────┘
+                    ┌─────────────────────────┐
+                    │  Task Scheduling Queue  │
+                    └─────────────────────────┘
 ```
 
 ## Quick Start
@@ -77,7 +77,7 @@ mysql -u root -p < scripts/init.sql
 - `POST /api/models` - Register new model
 - `PUT /api/models/:id` - Update model configuration
 
-## 📋 Task Types
+## Task Types
 
 - **text-generation** - Text generation tasks
 - **embedding** - Text vectorization
